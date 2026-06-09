@@ -1,0 +1,81 @@
+// =============================================
+// Prisma Schema - Mebel Sexi Nazorat Tizimi
+// =============================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// Ishchi modeli
+model Worker {
+  id           Int           @id @default(autoincrement())
+  telegramId   String        @unique  // Telegram foydalanuvchi ID
+  firstName    String
+  lastName     String
+  phone        String?
+  isAdmin      Boolean       @default(false)
+  baseSalary   Float         @default(500000) // Oylik asosiy maosh (so'm)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  // Bog'liq jadvallar
+  attendances  Attendance[]
+  salaries     Salary[]
+}
+
+// Davomat (kelish/ketish) modeli
+model Attendance {
+  id            Int       @id @default(autoincrement())
+  workerId      Int
+  worker        Worker    @relation(fields: [workerId], references: [id])
+
+  checkInTime   DateTime?           // Kelish vaqti
+  checkOutTime  DateTime?           // Ketish vaqti
+
+  checkInLat    Float?              // Kelish GPS kenglik
+  checkInLng    Float?              // Kelish GPS uzunlik
+  checkOutLat   Float?              // Ketish GPS kenglik
+  checkOutLng   Float?              // Ketish GPS uzunlik
+
+  checkInPhoto  String?             // Kelish selfie yo'li
+  checkOutPhoto String?             // Ketish selfie yo'li
+
+  isInsideZone  Boolean   @default(false)  // Geofencing tekshiruvi
+  status        String    @default("present") // present | absent | excused
+  note          String?                       // Admin izohi (sababli/sabab)
+
+  date          DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+}
+
+// Oylik hisobot modeli
+model Salary {
+  id           Int      @id @default(autoincrement())
+  workerId     Int
+  worker       Worker   @relation(fields: [workerId], references: [id])
+
+  month        Int      // Oy (1-12)
+  year         Int      // Yil
+
+  baseSalary   Float    // Asosiy maosh
+  bonus        Float    @default(0)   // Bonus
+  fine         Float    @default(0)   // Jarima
+  deductions   Float    @default(0)   // Ushlab qolingan (sababsiz qolgan kunlar)
+  totalSalary  Float                  // Jami = base + bonus - fine - deductions
+
+  daysWorked   Int      @default(0)   // Ishlagan kunlar soni
+  daysAbsent   Int      @default(0)   // Kelmagan kunlar
+  daysExcused  Int      @default(0)   // Sababli kelmagan kunlar
+
+  notes        String?  // Qo'shimcha izoh
+  isPaid       Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([workerId, month, year])  // Har oy uchun bitta yozuv
+}
